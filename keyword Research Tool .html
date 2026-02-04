@@ -1,0 +1,370 @@
+<!DOCTYPE html>
+<html lang="ur">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Keyword Research Tool - Professional SEO Tool</title>
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { 
+            margin: 0; 
+            padding: 0; 
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', sans-serif;
+        }
+        .animate-spin {
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+    
+    <script type="text/babel">
+        const { useState } = React;
+
+        // Lucide Icons as SVG components
+        const Search = ({ className = "w-6 h-6" }) => (
+            <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <circle cx="11" cy="11" r="8"></circle>
+                <path d="m21 21-4.35-4.35"></path>
+            </svg>
+        );
+
+        const TrendingUp = ({ className = "w-6 h-6" }) => (
+            <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <polyline points="23 6 13.5 15.5 8.5 10.5 1 18"></polyline>
+                <polyline points="17 6 23 6 23 12"></polyline>
+            </svg>
+        );
+
+        const Globe = ({ className = "w-4 h-4" }) => (
+            <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <circle cx="12" cy="12" r="10"></circle>
+                <line x1="2" y1="12" x2="22" y2="12"></line>
+                <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path>
+            </svg>
+        );
+
+        const BarChart3 = ({ className = "w-6 h-6" }) => (
+            <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M3 3v18h18"></path>
+                <path d="M18 17V9"></path>
+                <path d="M13 17V5"></path>
+                <path d="M8 17v-3"></path>
+            </svg>
+        );
+
+        const Download = ({ className = "w-5 h-5" }) => (
+            <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                <polyline points="7 10 12 15 17 10"></polyline>
+                <line x1="12" y1="15" x2="12" y2="3"></line>
+            </svg>
+        );
+
+        const Loader2 = ({ className = "w-5 h-5" }) => (
+            <svg className={`animate-spin ${className}`} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M21 12a9 9 0 1 1-6.219-8.56"></path>
+            </svg>
+        );
+
+        function KeywordResearchTool() {
+            const [keyword, setKeyword] = useState('');
+            const [country, setCountry] = useState('global');
+            const [loading, setLoading] = useState(false);
+            const [results, setResults] = useState(null);
+            const [error, setError] = useState('');
+
+            const searchKeywords = async () => {
+                if (!keyword.trim()) {
+                    setError('Keyword enter karein');
+                    return;
+                }
+
+                setLoading(true);
+                setError('');
+                setResults(null);
+
+                try {
+                    const mainSearch = await fetch("https://api.anthropic.com/v1/messages", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({
+                            model: "claude-sonnet-4-20250514",
+                            max_tokens: 1000,
+                            messages: [{
+                                role: "user",
+                                content: `Search for keyword ideas and trends related to: "${keyword}". Focus on ${country === 'global' ? 'global trends' : country + ' region'}. Find related keywords, search volume insights, and trending variations.`
+                            }],
+                            tools: [{ type: "web_search_20250305", name: "web_search" }]
+                        })
+                    });
+
+                    const mainData = await mainSearch.json();
+
+                    const longtailSearch = await fetch("https://api.anthropic.com/v1/messages", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({
+                            model: "claude-sonnet-4-20250514",
+                            max_tokens: 1000,
+                            messages: [{
+                                role: "user",
+                                content: `Find long-tail keyword variations and question-based keywords for: "${keyword}". Include "how to", "what is", "best" variations.`
+                            }],
+                            tools: [{ type: "web_search_20250305", name: "web_search" }]
+                        })
+                    });
+
+                    const longtailData = await longtailSearch.json();
+
+                    const competitionSearch = await fetch("https://api.anthropic.com/v1/messages", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({
+                            model: "claude-sonnet-4-20250514",
+                            max_tokens: 1000,
+                            messages: [{
+                                role: "user",
+                                content: `Analyze competition and difficulty for keyword: "${keyword}". Find top-ranking content and SEO difficulty insights.`
+                            }],
+                            tools: [{ type: "web_search_20250305", name: "web_search" }]
+                        })
+                    });
+
+                    const competitionData = await competitionSearch.json();
+
+                    const allResults = {
+                        mainKeywords: mainData.content?.find(c => c.type === 'text')?.text || 'No data found',
+                        longtailKeywords: longtailData.content?.find(c => c.type === 'text')?.text || 'No data found',
+                        competition: competitionData.content?.find(c => c.type === 'text')?.text || 'No data found'
+                    };
+
+                    setResults(allResults);
+                } catch (err) {
+                    setError('Error: ' + err.message + ' - Internet connection check karein');
+                } finally {
+                    setLoading(false);
+                }
+            };
+
+            const downloadResults = () => {
+                if (!results) return;
+
+                const content = `KEYWORD RESEARCH REPORT
+Main Keyword: ${keyword}
+Region: ${country}
+Date: ${new Date().toLocaleDateString('ur-PK')}
+
+===========================================
+MAIN KEYWORDS & TRENDS
+===========================================
+${results.mainKeywords}
+
+===========================================
+LONG-TAIL KEYWORDS
+===========================================
+${results.longtailKeywords}
+
+===========================================
+COMPETITION ANALYSIS
+===========================================
+${results.competition}
+
+===========================================
+Generated by: Professional Keyword Research Tool
+===========================================
+`;
+
+                const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `keyword-research-${keyword.replace(/\s+/g, '-')}-${Date.now()}.txt`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+            };
+
+            return (
+                <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-4 md:p-6">
+                    <div className="max-w-6xl mx-auto">
+                        {/* Header */}
+                        <div className="bg-white rounded-2xl shadow-xl p-6 md:p-8 mb-6">
+                            <div className="flex items-center gap-3 mb-4">
+                                <Search className="w-10 h-10 text-indigo-600" />
+                                <h1 className="text-2xl md:text-3xl font-bold text-gray-800">Professional Keyword Research Tool</h1>
+                            </div>
+                            <p className="text-gray-600">Duniya bhar ke keywords dhundhen - Real-time data ke saath</p>
+                        </div>
+
+                        {/* Search Form */}
+                        <div className="bg-white rounded-2xl shadow-xl p-6 md:p-8 mb-6">
+                            <div className="grid md:grid-cols-3 gap-4 mb-4">
+                                <div className="md:col-span-2">
+                                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                                        Main Keyword
+                                    </label>
+                                    <input
+                                        type="text"
+                                        value={keyword}
+                                        onChange={(e) => setKeyword(e.target.value)}
+                                        placeholder="e.g., digital marketing, web development, online business"
+                                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                                        onKeyPress={(e) => e.key === 'Enter' && searchKeywords()}
+                                    />
+                                </div>
+
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                                        <span className="inline-flex items-center gap-1">
+                                            <Globe /> Region
+                                        </span>
+                                    </label>
+                                    <select
+                                        value={country}
+                                        onChange={(e) => setCountry(e.target.value)}
+                                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
+                                    >
+                                        <option value="global">Global</option>
+                                        <option value="Pakistan">Pakistan</option>
+                                        <option value="India">India</option>
+                                        <option value="USA">USA</option>
+                                        <option value="UK">UK</option>
+                                        <option value="UAE">UAE</option>
+                                        <option value="Saudi Arabia">Saudi Arabia</option>
+                                        <option value="Canada">Canada</option>
+                                        <option value="Australia">Australia</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <button
+                                onClick={searchKeywords}
+                                disabled={loading}
+                                className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-3 px-6 rounded-lg transition flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                                {loading ? (
+                                    <>
+                                        <Loader2 />
+                                        Keywords dhundh rahe hain...
+                                    </>
+                                ) : (
+                                    <>
+                                        <Search />
+                                        Keywords Dhundhen
+                                    </>
+                                )}
+                            </button>
+
+                            {error && (
+                                <div className="mt-4 p-4 bg-red-50 border border-red-200 rounded-lg text-red-700">
+                                    ⚠️ {error}
+                                </div>
+                            )}
+                        </div>
+
+                        {/* Results */}
+                        {results && (
+                            <div className="space-y-6">
+                                {/* Download Button */}
+                                <div className="flex justify-end">
+                                    <button
+                                        onClick={downloadResults}
+                                        className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-lg font-semibold transition shadow-lg"
+                                    >
+                                        <Download />
+                                        Report Download Karein
+                                    </button>
+                                </div>
+
+                                {/* Main Keywords */}
+                                <div className="bg-white rounded-2xl shadow-xl p-6 md:p-8">
+                                    <div className="flex items-center gap-2 mb-4">
+                                        <TrendingUp className="text-indigo-600" />
+                                        <h2 className="text-xl md:text-2xl font-bold text-gray-800">Main Keywords & Trends</h2>
+                                    </div>
+                                    <div className="prose max-w-none">
+                                        <pre className="whitespace-pre-wrap text-gray-700 bg-gray-50 p-4 rounded-lg text-sm overflow-x-auto">
+                                            {results.mainKeywords}
+                                        </pre>
+                                    </div>
+                                </div>
+
+                                {/* Long-tail Keywords */}
+                                <div className="bg-white rounded-2xl shadow-xl p-6 md:p-8">
+                                    <div className="flex items-center gap-2 mb-4">
+                                        <Search className="text-green-600" />
+                                        <h2 className="text-xl md:text-2xl font-bold text-gray-800">Long-tail Keywords</h2>
+                                    </div>
+                                    <div className="prose max-w-none">
+                                        <pre className="whitespace-pre-wrap text-gray-700 bg-gray-50 p-4 rounded-lg text-sm overflow-x-auto">
+                                            {results.longtailKeywords}
+                                        </pre>
+                                    </div>
+                                </div>
+
+                                {/* Competition Analysis */}
+                                <div className="bg-white rounded-2xl shadow-xl p-6 md:p-8">
+                                    <div className="flex items-center gap-2 mb-4">
+                                        <BarChart3 className="text-orange-600" />
+                                        <h2 className="text-xl md:text-2xl font-bold text-gray-800">Competition Analysis</h2>
+                                    </div>
+                                    <div className="prose max-w-none">
+                                        <pre className="whitespace-pre-wrap text-gray-700 bg-gray-50 p-4 rounded-lg text-sm overflow-x-auto">
+                                            {results.competition}
+                                        </pre>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Features Info */}
+                        {!results && !loading && (
+                            <div className="bg-white rounded-2xl shadow-xl p-6 md:p-8">
+                                <h3 className="text-xl font-bold text-gray-800 mb-4">🚀 Features:</h3>
+                                <ul className="space-y-3 text-gray-700">
+                                    <li className="flex items-start gap-2">
+                                        <span className="text-indigo-600 font-bold text-xl">✓</span>
+                                        <span>Real-time keyword research duniya bhar se</span>
+                                    </li>
+                                    <li className="flex items-start gap-2">
+                                        <span className="text-indigo-600 font-bold text-xl">✓</span>
+                                        <span>Trending keywords aur search volume insights</span>
+                                    </li>
+                                    <li className="flex items-start gap-2">
+                                        <span className="text-indigo-600 font-bold text-xl">✓</span>
+                                        <span>Long-tail keyword variations (questions, "how to", "best" etc.)</span>
+                                    </li>
+                                    <li className="flex items-start gap-2">
+                                        <span className="text-indigo-600 font-bold text-xl">✓</span>
+                                        <span>Competition analysis aur SEO difficulty</span>
+                                    </li>
+                                    <li className="flex items-start gap-2">
+                                        <span className="text-indigo-600 font-bold text-xl">✓</span>
+                                        <span>Country-specific keyword research (9+ countries)</span>
+                                    </li>
+                                    <li className="flex items-start gap-2">
+                                        <span className="text-indigo-600 font-bold text-xl">✓</span>
+                                        <span>Downloadable detailed reports (.txt format)</span>
+                                    </li>
+                                    <li className="flex items-start gap-2">
+                                        <span className="text-indigo-600 font-bold text-xl">✓</span>
+                                        <span>Mobile aur Desktop dono ke liye responsive</span>
+                                    </li>
+                                </ul>
+
+                                <div className="mt-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                                    <h4 className="font-bold text-blue-900 mb-2">📌 Instructions:</h4>
+                                    <ol className="text-sm text-blue-800 space-y-1 ml-4 list-decimal">
+                                        <li>Apna main keyword enter karein (jaise "digital marketing")</li>
+                                        <li>Country select karein ya Global rakhen</li>
+                    
